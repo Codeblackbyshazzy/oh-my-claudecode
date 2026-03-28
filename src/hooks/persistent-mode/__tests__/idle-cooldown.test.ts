@@ -31,11 +31,15 @@ vi.mock('../../../lib/atomic-write.js', () => ({
   atomicWriteJsonSync: vi.fn(),
 }));
 
+const { TEST_HOME } = vi.hoisted(() => ({
+  TEST_HOME: process.env.HOME || '/tmp/omc-test-home',
+}));
+
 vi.mock('os', async () => {
-  const actual = await vi.importActual('os');
+  const actual = await vi.importActual<typeof import('os')>('os');
   return {
     ...actual,
-    homedir: vi.fn().mockReturnValue('/home/testuser'),
+    homedir: vi.fn().mockReturnValue(TEST_HOME),
   };
 });
 
@@ -57,7 +61,7 @@ describe('getIdleNotificationCooldownSeconds', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    process.env.HOME = '/home/testuser';
+    process.env.HOME = TEST_HOME;
     delete process.env.XDG_CONFIG_HOME;
     delete process.env.XDG_STATE_HOME;
     delete process.env.OMC_HOME;

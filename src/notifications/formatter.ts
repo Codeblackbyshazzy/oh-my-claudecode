@@ -207,6 +207,12 @@ const REVIEW_SEED_CUE_RE =
 /** Continuation markers for bullets / enumerated option lines in seeded prompts. */
 const REVIEW_SEED_LIST_RE = /^(?:[-*•]|\d+[.)]|[A-Z][A-Z_-]+:|\([a-z0-9]+\))/;
 
+/** Static source/grep output lines that often trip keyword alerts without representing runtime failure. */
+const SOURCE_PATH_LINE_RE = /^(?:\.\/)?[A-Za-z0-9_./-]+:\d+:/;
+const STATIC_CODE_ALERT_RE = /(?:\blog_error\b|\becho\b).*?(?:"error\||"Usage:)|==\s*"error"/;
+const HELP_USAGE_LINE_RE = /^(?:Usage|Examples?|Commands?|Options?|Flags?):/i;
+const STATIC_HELP_CODE_RE = /^(?:log_error\s+"Usage:|if\s+\[\[.*==\s*"error".*\]\];?\s*then$)/;
+
 /** Default maximum number of meaningful lines to include in a notification.
  * Matches DEFAULT_TMUX_TAIL_LINES in config.ts. */
 const DEFAULT_MAX_TAIL_LINES = 15;
@@ -272,6 +278,9 @@ export function parseTmuxTail(raw: string, maxLines: number = DEFAULT_MAX_TAIL_L
     if (OMC_HUD_RE.test(trimmed)) continue;
     if (BYPASS_PERM_RE.test(trimmed)) continue;
     if (BARE_PROMPT_RE.test(trimmed)) continue;
+    if (HELP_USAGE_LINE_RE.test(trimmed)) continue;
+    if (STATIC_HELP_CODE_RE.test(trimmed)) continue;
+    if (SOURCE_PATH_LINE_RE.test(trimmed) && STATIC_CODE_ALERT_RE.test(trimmed)) continue;
 
     // Alphanumeric density check: drop lines mostly composed of special characters
     const alnumCount = (trimmed.match(/[a-zA-Z0-9]/g) || []).length;

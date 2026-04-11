@@ -360,6 +360,25 @@ describe("parseTmuxTail noise filters", () => {
 
     expect(parseTmuxTail(input)).toBe(input);
   });
+
+  it("drops grep/source lines that only contain static error markers", () => {
+    const input = [
+      'skills/project-session-manager/lib/tmux.sh:16:        echo "error|tmux not found"',
+      'skills/project-session-manager/lib/tmux.sh:28:        echo "error|Failed to create tmux session"',
+    ].join("\n");
+
+    expect(parseTmuxTail(input)).toBe("");
+  });
+
+  it("drops usage/help source text that would otherwise trip error alerts", () => {
+    const input = [
+      'Usage: psm review <ref>',
+      'if [[ "$tmux_status" == "error" ]]; then',
+      'log_error "Usage: psm fix <ref>"',
+    ].join("\n");
+
+    expect(parseTmuxTail(input)).toBe("");
+  });
 });
 
 describe("tmuxTail in formatters", () => {

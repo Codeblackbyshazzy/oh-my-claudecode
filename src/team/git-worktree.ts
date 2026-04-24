@@ -77,7 +77,11 @@ function isInsideGitRepo(repoRoot: string): boolean {
 }
 
 function assertCleanLeaderWorktree(repoRoot: string): void {
-  const status = git(repoRoot, ['status', '--porcelain']);
+  const status = git(repoRoot, ['status', '--porcelain'])
+    .split('\n')
+    .filter(line => line.trim() !== '' && !/^\?\? \.omc(?:\/|$)/.test(line))
+    .join('\n')
+    .trim();
   if (status.length > 0) {
     const error = new Error('leader_worktree_dirty: commit, stash, or clean changes before enabling team worktree mode');
     (error as Error & { code?: string }).code = 'leader_worktree_dirty';
@@ -215,19 +219,6 @@ function assertCompatibleExistingWorktree(
     const error = new Error(`worktree_mismatch: expected detached worktree at ${wtPath}, found ${registeredBranch}`);
     (error as Error & { code?: string }).code = 'worktree_mismatch';
     throw error;
-  }
-}
-
-function assertLeaderRepoClean(repoRoot: string): void {
-  const status = git(repoRoot, ['status', '--porcelain'])
-    .split('\n')
-    .filter(line => line.trim() !== '' && !/^\?\? \.omc(?:\/|$)/.test(line))
-    .join('\n')
-    .trim();
-  if (status !== '') {
-    const err = new Error('leader_worktree_dirty: refusing to provision team worktrees from a dirty leader repository');
-    err.name = 'leader_worktree_dirty';
-    throw err;
   }
 }
 

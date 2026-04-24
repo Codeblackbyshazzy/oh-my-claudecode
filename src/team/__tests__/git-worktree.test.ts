@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { mkdtempSync, rmSync, existsSync, writeFileSync, mkdirSync } from 'fs';
+import { mkdtempSync, rmSync, existsSync, writeFileSync, mkdirSync, readFileSync } from 'fs';
 import { join } from 'path';
 import { tmpdir } from 'os';
 import { execFileSync } from 'child_process';
@@ -9,6 +9,8 @@ import {
   listTeamWorktrees,
   cleanupTeamWorktrees,
   ensureWorkerWorktree,
+  installWorktreeRootAgents,
+  restoreWorktreeRootAgents,
 } from '../git-worktree.js';
 
 describe('git-worktree', () => {
@@ -83,6 +85,20 @@ describe('git-worktree', () => {
       expect(info?.detached).toBe(true);
       expect(info?.created).toBe(true);
       expect(info?.reused).toBe(false);
+    });
+
+    it('ignores native .omc metadata when requiring a clean leader for multiple workers', () => {
+      const first = ensureWorkerWorktree(teamName, 'worker-clean-1', repoDir, {
+        mode: 'detached',
+      });
+      const second = ensureWorkerWorktree(teamName, 'worker-clean-2', repoDir, {
+        mode: 'detached',
+      });
+
+      expect(first?.created).toBe(true);
+      expect(second?.created).toBe(true);
+      expect(existsSync(first!.path)).toBe(true);
+      expect(existsSync(second!.path)).toBe(true);
     });
 
     it('preserves dirty existing worktrees', () => {
@@ -162,6 +178,35 @@ describe('git-worktree', () => {
       expect(result.preserved).toHaveLength(1);
       expect(existsSync(dirty.path)).toBe(true);
       expect(listTeamWorktrees(teamName, repoDir)).toHaveLength(1);
+    });
+
+    it('restores a pre-existing worktree-root AGENTS.md before removing a clean worktree', () => {
+      const info = createWorkerWorktree(teamName, 'worker-agents', repoDir);
+      const agentsPath = join(info.path, 'AGENTS.md');
+      writeFileSync(agentsPath, 'original instructions');
+
+      installWorktreeRootAgents(teamName, 'worker-agents', repoDir, info.path, 'managed worker overlay');
+      expect(readFileSync(agentsPath, 'utf-8')).toBe('managed worker overlay');
+
+      restoreWorktreeRootAgents(teamName, 'worker-agents', repoDir, info.path);
+      expect(readFileSync(agentsPath, 'utf-8')).toBe('original instructions');
+
+      removeWorkerWorktree(teamName, 'worker-agents', repoDir);
+      expect(existsSync(info.path)).toBe(false);
+    });
+
+    it('preserves a worktree when the managed root AGENTS.md was edited', () => {
+      const info = createWorkerWorktree(teamName, 'worker-agents-dirty', repoDir);
+      installWorktreeRootAgents(teamName, 'worker-agents-dirty', repoDir, info.path, 'managed worker overlay');
+      writeFileSync(join(info.path, 'AGENTS.md'), 'human edits');
+
+      const result = cleanupTeamWorktrees(teamName, repoDir);
+
+      expect(result.removed).toHaveLength(0);
+      expect(result.preserved).toHaveLength(1);
+      expect(result.preserved[0]?.reason).toContain('worktree_dirty');
+      expect(existsSync(info.path)).toBe(true);
+      expect(readFileSync(join(info.path, 'AGENTS.md'), 'utf-8')).toBe('human edits');
     });
   });
 });

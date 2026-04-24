@@ -95,7 +95,7 @@ const TEAM_API_OPERATION_OPTIONAL_FIELDS: Partial<Record<TeamApiOperation, strin
   'read-shutdown-ack': ['min_updated_at'],
   'write-worker-identity': [
     'assigned_tasks', 'pid', 'pane_id', 'working_dir',
-    'worktree_path', 'worktree_branch', 'worktree_detached', 'team_state_root',
+    'worktree_repo_root', 'worktree_path', 'worktree_branch', 'worktree_detached', 'worktree_created', 'team_state_root',
   ],
   'append-event': ['task_id', 'message_id', 'reason'],
   'write-task-approval': ['required'],

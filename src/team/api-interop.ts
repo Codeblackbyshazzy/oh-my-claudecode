@@ -808,9 +808,11 @@ export async function executeTeamApiOperation(
           pid: args.pid as number | undefined,
           pane_id: args.pane_id as string | undefined,
           working_dir: args.working_dir as string | undefined,
+          worktree_repo_root: args.worktree_repo_root as string | undefined,
           worktree_path: args.worktree_path as string | undefined,
           worktree_branch: args.worktree_branch as string | undefined,
           worktree_detached: args.worktree_detached as boolean | undefined,
+          worktree_created: args.worktree_created as boolean | undefined,
           team_state_root: args.team_state_root as string | undefined,
         }, cwd);
         return { ok: true, operation, data: { worker } };

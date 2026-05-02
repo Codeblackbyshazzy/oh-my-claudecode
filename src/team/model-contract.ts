@@ -444,9 +444,9 @@ function contractExtraFlags(
     normalizeOptionalModel(parsed.modelOverride) ??
     normalizeOptionalModel(model);
   const passthrough = [...parsed.passthrough];
-  if (parsed.modelProviderOverride)
+  if (agentType === "codex" && parsed.modelProviderOverride)
     passthrough.push(CONFIG_FLAG, parsed.modelProviderOverride);
-  if (parsed.reasoningOverride)
+  if (agentType === "codex" && parsed.reasoningOverride)
     passthrough.push(CONFIG_FLAG, parsed.reasoningOverride);
   if (parsed.wantsBypass && agentType !== "codex")
     passthrough.push(CODEX_BYPASS_FLAG);

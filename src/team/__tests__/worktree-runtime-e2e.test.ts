@@ -35,6 +35,7 @@ afterEach(() => {
 describe('worktree runtime e2e: 3 workers × 10 commits', () => {
   let fixture: GitFixture;
   let handle: OrchestratorHandle;
+  const WAIT_FOR_MERGE_TIMEOUT_MS = 15000;
 
   beforeEach(async () => {
     fixture = await createGitFixture({
@@ -100,7 +101,7 @@ describe('worktree runtime e2e: 3 workers × 10 commits', () => {
           eventType: 'merge_succeeded',
           worker,
           count: mergeCountPerWorker[worker],
-          timeoutMs: 5000,
+          timeoutMs: WAIT_FOR_MERGE_TIMEOUT_MS,
         });
         // Re-read current count in case rebase-induced merges arrived
         const currentEvents = readEventLog(eventLog);
@@ -139,7 +140,7 @@ describe('worktree runtime e2e: 3 workers × 10 commits', () => {
           eventType: 'merge_succeeded',
           worker,
           count: mergeCountPerWorker[worker],
-          timeoutMs: 5000,
+          timeoutMs: WAIT_FOR_MERGE_TIMEOUT_MS,
         });
         // Update count to include any rebase-induced merges
         const currentEvents = readEventLog(eventLog);

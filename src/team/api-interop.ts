@@ -1123,36 +1123,38 @@ export async function executeTeamApiOperation(
         const teamName = String(args.team_name || '').trim();
         if (!teamName) return { ok: false, operation, error: { code: 'invalid_input', message: 'team_name is required' } };
         const wakeableOnly = parseOptionalBoolean(args.wakeable_only, 'wakeable_only');
-        const type = parseOptionalEventType(args.type);
+        const eventType = parseOptionalEventType(args.type);
         const worker = typeof args.worker === 'string' ? args.worker.trim() : '';
         const taskId = typeof args.task_id === 'string' ? args.task_id.trim() : '';
         const afterEventId = typeof args.after_event_id === 'string' ? args.after_event_id.trim() : '';
-        const events = filterTeamEvents(await readTeamEvents(teamName, cwd), { afterEventId, wakeableOnly, type, worker, taskId });
+        const events = await readTeamEvents(teamName, cwd, {
+          afterEventId: afterEventId || undefined,
+          wakeableOnly: wakeableOnly ?? false,
+          type: eventType ?? undefined,
+          worker: worker || undefined,
+          taskId: taskId || undefined,
+        });
         return { ok: true, operation, data: { count: events.length, cursor: events.at(-1)?.event_id ?? afterEventId, events } };
       }
       case 'await-event': {
         const teamName = String(args.team_name || '').trim();
         if (!teamName) return { ok: false, operation, error: { code: 'invalid_input', message: 'team_name is required' } };
         const timeoutMs = parseOptionalNonNegativeInteger(args.timeout_ms, 'timeout_ms') ?? 30_000;
-        const pollMs = parseOptionalNonNegativeInteger(args.poll_ms, 'poll_ms') ?? 250;
+        const pollMs = parseOptionalNonNegativeInteger(args.poll_ms, 'poll_ms');
         const wakeableOnly = parseOptionalBoolean(args.wakeable_only, 'wakeable_only');
-        const type = parseOptionalEventType(args.type);
+        const eventType = parseOptionalEventType(args.type);
         const worker = typeof args.worker === 'string' ? args.worker.trim() : '';
         const taskId = typeof args.task_id === 'string' ? args.task_id.trim() : '';
-        const afterEventId = typeof args.after_event_id === 'string' ? args.after_event_id.trim() : '';
-        const deadline = Date.now() + timeoutMs;
-        const cursor = afterEventId;
-        while (true) {
-          const events = filterTeamEvents(await readTeamEvents(teamName, cwd), { afterEventId: cursor, wakeableOnly, type, worker, taskId });
-          if (events.length > 0) {
-            const event = events[0]!;
-            return { ok: true, operation, data: { status: 'event', cursor: event.event_id, event } };
-          }
-          if (Date.now() >= deadline) {
-            return { ok: true, operation, data: { status: 'timeout', cursor, event: null } };
-          }
-          await new Promise((resolve) => setTimeout(resolve, Math.min(pollMs, Math.max(0, deadline - Date.now()))));
-        }
+        const result = await waitForTeamEvent(teamName, cwd, {
+          afterEventId: typeof args.after_event_id === 'string' ? args.after_event_id.trim() || undefined : undefined,
+          timeoutMs,
+          pollMs: pollMs ?? undefined,
+          wakeableOnly: wakeableOnly ?? false,
+          type: eventType ?? undefined,
+          worker: worker || undefined,
+          taskId: taskId || undefined,
+        });
+        return { ok: true, operation, data: { status: result.status, cursor: result.cursor, event: result.event ?? null } };
       }
       case 'read-idle-state': {
         const teamName = String(args.team_name || '').trim();
@@ -1163,21 +1165,20 @@ export async function executeTeamApiOperation(
           readTeamEvents(teamName, cwd),
         ]);
         if (!summary) return { ok: false, operation, error: { code: 'team_not_found', message: 'team_not_found' } };
-        const recentEvents = events.slice(Math.max(0, events.length - 50));
+        const recentEvents = selectRecentEvents(events);
         return { ok: true, operation, data: buildIdleState(teamName, summary, snapshot, recentEvents) };
       }
       case 'read-stall-state': {
         const teamName = String(args.team_name || '').trim();
         if (!teamName) return { ok: false, operation, error: { code: 'invalid_input', message: 'team_name is required' } };
-        const [summary, snapshot, events, pendingLeaderDispatch] = await Promise.all([
+        const [summary, snapshot, events] = await Promise.all([
           teamGetSummary(teamName, cwd),
           teamReadMonitorSnapshot(teamName, cwd),
           readTeamEvents(teamName, cwd),
-          listDispatchRequests(teamName, cwd, { status: 'pending', to_worker: 'leader-fixed' }),
         ]);
         if (!summary) return { ok: false, operation, error: { code: 'team_not_found', message: 'team_not_found' } };
-        const recentEvents = events.slice(Math.max(0, events.length - 50));
-        return { ok: true, operation, data: buildStallState(teamName, summary, snapshot, recentEvents, pendingLeaderDispatch.length) };
+        const recentEvents = selectRecentEvents(events);
+        return { ok: true, operation, data: buildStallState(teamName, summary, snapshot, recentEvents) };
       }
       case 'get-summary': {
         const teamName = String(args.team_name || '').trim();

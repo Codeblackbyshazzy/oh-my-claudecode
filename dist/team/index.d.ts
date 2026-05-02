@@ -56,6 +56,8 @@ export { isLeaderRuntimeStale, leaderRuntimeActivityPath, readBranchGitActivityM
 export { readLatestTeamProgressEvidenceMs } from './progress-evidence.js';
 export { appendTeamCommitHygieneEntries, buildTeamCommitHygieneContext, readTeamCommitHygieneLedger, renderTeamCommitHygieneMarkdown, resolveTeamCommitHygieneArtifactCwd, resolveTeamCommitHygieneArtifactPaths, TEAM_OPERATIONAL_COMMIT_KINDS, TEAM_OPERATIONAL_COMMIT_STATUSES, writeTeamCommitHygieneContext, } from './commit-hygiene.js';
 export type { TeamCommitHygieneArtifactPaths, TeamCommitHygieneContext, TeamCommitHygieneLedger, TeamCommitHygieneTaskSummary, TeamCommitHygieneVocabulary, TeamCommitHygieneVocabularyTerm, TeamOperationalCommitEntry, TeamOperationalCommitKind, TeamOperationalCommitStatus, } from './commit-hygiene.js';
+export { buildRepoAwareTeamExecutionPlan, remapRepoAwareDecompositionMetadataToCreatedTasks, } from './repo-aware-decomposition.js';
+export type { LegacyTeamExecutionPlanInput, RepoAwareTask, RepoAwareTeamExecutionPlan, TaskHintSummary, TeamDecompositionMetadata, } from './repo-aware-decomposition.js';
 export { checkSentinelReadiness, waitForSentinelReadiness, } from './sentinel-gate.js';
 export type { SentinelReadinessOptions, SentinelGateResult, SentinelWaitOptions, SentinelWaitResult, } from './sentinel-gate.js';
 export type { CliAgentType, CliAgentContract, WorkerLaunchConfig } from './model-contract.js';

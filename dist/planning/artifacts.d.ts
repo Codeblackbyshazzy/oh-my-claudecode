@@ -2,6 +2,11 @@ export interface PlanningArtifacts {
     prdPaths: string[];
     testSpecPaths: string[];
 }
+export interface ApprovedRepositoryContextSummary {
+    sourcePath: string;
+    content: string;
+    truncated: boolean;
+}
 export interface ApprovedExecutionLaunchHint {
     mode: "team" | "ralph";
     command: string;

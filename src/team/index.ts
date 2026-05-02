@@ -261,6 +261,18 @@ export type {
 } from './commit-hygiene.js';
 
 export {
+  buildRepoAwareTeamExecutionPlan,
+  remapRepoAwareDecompositionMetadataToCreatedTasks,
+} from './repo-aware-decomposition.js';
+export type {
+  LegacyTeamExecutionPlanInput,
+  RepoAwareTask,
+  RepoAwareTeamExecutionPlan,
+  TaskHintSummary,
+  TeamDecompositionMetadata,
+} from './repo-aware-decomposition.js';
+
+export {
   checkSentinelReadiness,
   waitForSentinelReadiness,
 } from './sentinel-gate.js';

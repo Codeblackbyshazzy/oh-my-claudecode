@@ -20,12 +20,19 @@ export interface PlanningArtifacts {
   testSpecPaths: string[];
 }
 
+export interface ApprovedRepositoryContextSummary {
+  sourcePath: string;
+  content: string;
+  truncated: boolean;
+}
+
 export interface ApprovedExecutionLaunchHint {
   mode: "team" | "ralph";
   command: string;
   task: string;
   workerCount?: number;
   agentType?: string;
+  autoMerge?: boolean;
   linkedRalph?: boolean;
   sourcePath: string;
 }
@@ -172,6 +179,7 @@ type LaunchHintSelection =
       task: string;
       workerCount?: number;
       agentType?: string;
+      autoMerge: boolean;
       linkedRalph: boolean;
     };
 
@@ -217,13 +225,15 @@ function selectLaunchHintMatch(
     const workerCount = match.groups?.count
       ? Number.parseInt(match.groups.count, 10)
       : undefined;
+    const parsedFlags = parseFlags(flags);
 
     return [{
       command,
       task,
       ...(workerCount == null ? {} : { workerCount }),
       agentType: match.groups?.role || undefined,
-      linkedRalph: /\sralph(?:\s|$)/.test(command) || parseFlags(flags).linkedRalph,
+      autoMerge: parsedFlags.autoMerge,
+      linkedRalph: /\sralph(?:\s|$)/.test(command) || parsedFlags.linkedRalph,
     }];
   });
 
@@ -238,8 +248,9 @@ function selectLaunchHintMatch(
   return { status: "unique", ...matchesToConsider[0]! };
 }
 
-function parseFlags(flagStr: string): { linkedRalph: boolean } {
+function parseFlags(flagStr: string): { autoMerge: boolean; linkedRalph: boolean } {
   return {
+    autoMerge: /--auto-merge/.test(flagStr),
     linkedRalph: /--linked-ralph/.test(flagStr),
   };
 }
@@ -304,6 +315,7 @@ export function readApprovedExecutionLaunchHintOutcome(
         task: selected.task,
         workerCount: selected.workerCount,
         agentType: selected.agentType,
+        ...(selected.autoMerge ? { autoMerge: true } : {}),
         linkedRalph: selected.linkedRalph,
         sourcePath: prdPath,
       },

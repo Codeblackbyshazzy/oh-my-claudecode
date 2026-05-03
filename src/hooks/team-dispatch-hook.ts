@@ -1,7 +1,7 @@
 /**
  * Team dispatch hook: drain pending dispatch requests via tmux injection.
  *
- * Mirrors OMX scripts/notify-hook/team-dispatch.js behavior exactly.
+ * OMX-derived behavior adapted to OMC hook and state-root contracts.
  *
  * Called on every leader hook tick. Workers skip (OMC_TEAM_WORKER set).
  * Processes pending dispatch requests with:
@@ -17,6 +17,7 @@ import { readFile, writeFile, mkdir, readdir, appendFile, rename, rm, stat } fro
 import { existsSync } from 'fs';
 import { dirname, join, resolve } from 'path';
 import { createSwallowedErrorLogger } from '../lib/swallowed-error.js';
+import { readTeamRuntimeDescriptor } from './team-runtime-descriptor.js';
 import { tmuxExecAsync } from '../cli/tmux-utils.js';
 
 // ── Helpers ────────────────────────────────────────────────────────────────
@@ -578,12 +579,10 @@ export async function drainPendingTeamDispatch(options: {
   for (const teamName of teams) {
     if (processed >= maxPerTick) break;
     const teamDirPath = join(teamRoot, teamName);
-    const manifestPath = join(teamDirPath, 'manifest.v2.json');
-    const configPath = join(teamDirPath, 'config.json');
     const requestsPath = join(teamDirPath, 'dispatch', 'requests.json');
     if (!existsSync(requestsPath)) continue;
 
-    const config = await readJson<TeamConfig>(existsSync(manifestPath) ? manifestPath : configPath, {});
+    const config = (await readTeamRuntimeDescriptor(teamDirPath) ?? {}) as TeamConfig;
     await withDispatchLock(teamDirPath, async () => {
       const requests = await readJson<DispatchRequest[]>(requestsPath, []);
       if (!Array.isArray(requests)) return;

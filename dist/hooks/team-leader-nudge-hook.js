@@ -14,6 +14,7 @@ import { join } from 'path';
 import { appendTeamEvent } from '../team/events.js';
 import { deriveTeamLeaderGuidance } from '../team/leader-nudge-guidance.js';
 import { createSwallowedErrorLogger } from '../lib/swallowed-error.js';
+import { readTeamRuntimeDescriptor } from './team-runtime-descriptor.js';
 // ── Helpers ────────────────────────────────────────────────────────────────
 function safeString(value, fallback = '') {
     if (typeof value === 'string')
@@ -104,13 +105,10 @@ export async function checkLeaderStaleness(params) {
         nonReportingWorkerCount: 0,
         totalWorkerCount: 0,
     };
-    // Read config to get worker list
-    const configPath = join(teamDir, 'config.json');
-    const manifestPath = join(teamDir, 'manifest.v2.json');
-    const srcPath = existsSync(manifestPath) ? manifestPath : existsSync(configPath) ? configPath : null;
-    if (!srcPath)
+    // Read runtime descriptor to get worker list. Canonical OMC manifest wins; legacy OMX/config files are compatibility fallbacks.
+    const config = await readTeamRuntimeDescriptor(teamDir);
+    if (!config)
         return { ...notStale, reason: 'no_config' };
-    const config = await readJsonSafe(srcPath, { workers: [] });
     const workers = config.workers ?? [];
     if (workers.length === 0)
         return { ...notStale, reason: 'no_workers' };
@@ -273,13 +271,10 @@ export async function maybeNudgeLeader(params) {
     if (nudgeState.last_nudge_at_ms > 0 && (nowMs - nudgeState.last_nudge_at_ms) < cooldownMs) {
         return { nudged: false, reason: 'cooldown' };
     }
-    // Find leader pane
-    const configPath = join(teamDir, 'config.json');
-    const manifestPath = join(teamDir, 'manifest.v2.json');
-    const srcPath = existsSync(manifestPath) ? manifestPath : existsSync(configPath) ? configPath : null;
-    if (!srcPath)
+    // Find leader pane from canonical descriptor first, with compatibility fallbacks.
+    const cfgForPane = await readTeamRuntimeDescriptor(teamDir);
+    if (!cfgForPane)
         return { nudged: false, reason: 'no_config' };
-    const cfgForPane = await readJsonSafe(srcPath, {});
     const leaderPaneId = safeString(cfgForPane.leader_pane_id).trim();
     if (!leaderPaneId)
         return { nudged: false, reason: 'no_leader_pane_id' };

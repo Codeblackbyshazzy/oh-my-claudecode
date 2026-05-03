@@ -1,7 +1,7 @@
 /**
  * Team worker hook: heartbeat, idle detection, and leader notification.
  *
- * Mirrors OMX scripts/notify-hook/team-worker.js behavior exactly.
+ * OMX-derived behavior adapted to OMC hook and state-root contracts.
  *
  * Short-circuit: if OMC_TEAM_WORKER is not set, returns immediately (<1ms).
  *
@@ -16,6 +16,7 @@ import { readFile, writeFile, mkdir, appendFile, rename, stat } from 'fs/promise
 import { existsSync } from 'fs';
 import { join } from 'path';
 import { createSwallowedErrorLogger } from '../lib/swallowed-error.js';
+import { readTeamRuntimeDescriptor } from './team-runtime-descriptor.js';
 // ── Env helpers ────────────────────────────────────────────────────────────
 function safeString(value, fallback = '') {
     if (typeof value === 'string')
@@ -167,15 +168,9 @@ async function readWorkerHeartbeatSnapshot(stateDir, teamName, workerName, nowMs
     }
 }
 async function readTeamWorkersForIdleCheck(stateDir, teamName) {
-    const manifestPath = join(stateDir, 'team', teamName, 'manifest.v2.json');
-    const configPath = join(stateDir, 'team', teamName, 'config.json');
-    const srcPath = existsSync(manifestPath) ? manifestPath : existsSync(configPath) ? configPath : null;
-    if (!srcPath)
-        return null;
     try {
-        const raw = await readFile(srcPath, 'utf-8');
-        const parsed = JSON.parse(raw);
-        if (!parsed || typeof parsed !== 'object')
+        const parsed = await readTeamRuntimeDescriptor(join(stateDir, 'team', teamName));
+        if (!parsed)
             return null;
         const workers = parsed.workers;
         if (!Array.isArray(workers) || workers.length === 0)

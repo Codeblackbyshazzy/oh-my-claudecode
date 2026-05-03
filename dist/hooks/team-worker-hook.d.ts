@@ -1,7 +1,7 @@
 /**
  * Team worker hook: heartbeat, idle detection, and leader notification.
  *
- * Mirrors OMX scripts/notify-hook/team-worker.js behavior exactly.
+ * OMX-derived behavior adapted to OMC hook and state-root contracts.
  *
  * Short-circuit: if OMC_TEAM_WORKER is not set, returns immediately (<1ms).
  *

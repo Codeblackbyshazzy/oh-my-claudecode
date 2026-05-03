@@ -1,7 +1,7 @@
 /**
  * Team dispatch hook: drain pending dispatch requests via tmux injection.
  *
- * Mirrors OMX scripts/notify-hook/team-dispatch.js behavior exactly.
+ * OMX-derived behavior adapted to OMC hook and state-root contracts.
  *
  * Called on every leader hook tick. Workers skip (OMC_TEAM_WORKER set).
  * Processes pending dispatch requests with:

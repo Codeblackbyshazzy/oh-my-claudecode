@@ -1,79 +1,54 @@
-# oh-my-claudecode v4.13.5
+# oh-my-claudecode v4.13.6: Reliability & macOS Hardening
 
-v4.13.5 is a larger maintenance and stability release than the generated notes originally showed: **18 merged PRs / 32 commits** since v4.13.4.
+Bug fixes for session lifecycle, macOS launch path, and team auth, plus reviewer/designer agent upgrades for Opus 4.7. Net delivery is **14 PRs**: the omx-teams backport (#2903) shipped and was reverted (#2910) within the window, so team-runtime behavior matches v4.13.5.
 
 ## Highlights
 
-### Team auto-merge runtime
+### macOS launch path
 
-- Added the team auto-merge / fan-out rebase path for worker branches.
-- Added mailbox, leader inbox, commit-cadence, merge-orchestrator, restart recovery, and safety checks for team runtime flows.
-- Hardened auto-merge runtime contracts and gitdir safety.
+- **`--madmax`/`--yolo` now require tmux on macOS** (#2909) — instead of silently launching direct, the launcher exits with a `brew install tmux` hint when tmux is missing, and surfaces the underlying error if `tmux new-session`/`attach-session` fails.
 
-### HUD and rate-limit correctness
+### Session and cancel reliability
 
-- Fixed several Max / Pro / enterprise-spend edge cases in HUD rate-limit display.
-- Preserved Pro/Max rate limits when subscription metadata is missing or enterprise-shaped spend data appears.
-- Fixed Max overage used-credit classification and cold-start statusLine flicker.
+- **Stop hook: clean up orphan session state** (#2912, fixes #2911) — sessions terminated by `cancel`/`stop` no longer leave behind active mode-state files that re-arm continuations.
+- **Cancel: clear Ralph stop hook artifacts** (#2897) — `cancelomc` now also clears the stop-hook scaffolding so Ralph can't restart.
+- **Persistent mode: ignore orphan autopilot routing echo** (#2899) — stale routing echoes from previous sessions no longer hijack the active session.
+- **Launch: preserve Claude auth in runtime config** (#2908, fixes #2906) — `claude.json` auth payload survives launcher rewrites.
 
-### Ralph / hooks / session-state stability
+### Team and autoresearch correctness
 
-- Fixed stale Ralph stop-hook behavior after cancel.
-- Made Ralph PRD state session-scoped.
-- Improved SessionStart reconciliation for hard-terminated sessions and explicit start markers.
-- Clarified durable SessionStart cleanup evidence and stopped relying on hook-runner PPID for cleanup.
+- **Team: use claude bare mode with API key auth** (#2890) — fixes auth handoff into team-spawned `claude` workers when `ANTHROPIC_API_KEY` is the active credential.
+- **Team: require delegation evidence for broad completions** (#2895) — broad task closures must show delegation evidence rather than self-declared completion.
+- **Autoresearch: stop discarding the first passing candidate** (#2905, by @stevenmorrisroe) — supervisor no longer drops the bootstrap candidate that already meets acceptance.
 
-### Tool and skill behavior fixes
+### Agent upgrades for Opus 4.7
 
-- Fixed structured Write/Edit success-envelope handling so successful object responses are not treated as failures.
-- Fixed `/deep-dive` so it honors the shared `omc.deepInterview.ambiguityThreshold` setting instead of using a hardcoded threshold.
-- Confirmed CLAUDE.md closing tag alignment.
-- Removed AI slop across source files.
+- **Designer agent: domain-aware override of Opus 4.7 editorial defaults** (#2893) — keeps designer outputs in the requested register instead of being rewritten by global editorial behavior.
+- **Code-reviewer agent: discovery/filter separation for Opus 4.7** (#2892) — splits "what could be wrong" from "what is severe enough to surface" so reviews don't drown in low-signal nits.
 
-## Merged PRs
+### State and tooling fixes
 
-- #2807 — refactor(src): remove AI slop across 13 files
-- #2810 — Fix HUD rate limits with missing subscription metadata
-- #2814 — Fix Max HUD rate limits with enterprise spend
-- #2820 — Confirm CLAUDE.md closing tag alignment
-- #2823 — Preserve Pro/Max rate limits with zero enterprise spend
-- #2826 — Fix post-tool verifier object response false positives
-- #2830 — Protect HUD limits from enterprise-shaped Pro/Max spend
-- #2833 — Fix stale Ralph stop hook after cancel
-- #2836 — Fix HUD Max overage used credits classification
-- #2839 — Protect Max HUD rate limits from legacy spend cache
-- #2831 — Team auto-merge / fan-out rebase
-- #2817 — SessionStart reconciliation for hard-terminated sessions
-- #2841 — Structured Write/Edit success envelopes
-- #2844 — HUD statusLine cold-start flicker
-- #2848 — Session-scoped Ralph PRD state
-- #2850 — Max HUD rate limits with enterprise spend cache data
-- #2852 — Deep-dive ambiguity threshold settings
-- #2853 — Release prep v4.13.5
+- **Project memory: keep detector authoritative for schema-known fields on rescan** (#2883) — rescans no longer clobber detector-owned fields with stale values.
+- **Project memory: preserve unknown fields across rescan** (#2882) — fields the schema doesn't recognize are passed through instead of dropped.
+- **Wiki: honor `workingDirectory` for manual worktrees** (#2880) — wiki tools resolve against the worktree root the user passed, not the parent repo.
+- **Post-tool verifier: recognize Edit success output** (#2877) — `Edit` results no longer flagged as failures by the verifier.
+- **Pre-tool: warn on fallback slop language** (#2878) — flags filler phrasing in tool-call narration before it reaches the user.
+- **Planning artifacts: timestamp canonical handoff files** (#2894) — handoff artifacts now carry timestamps so consumers can detect staleness.
 
-## Validation
+### Docs
 
-- Main CI passed
-- Upgrade Test passed
-- Release workflow passed
-- npm package published: `oh-my-claude-sisyphus@4.13.5`
+- **Explain the prebuild-install warning** (#2914, fixes #2913) — clarifies the harmless `prebuild-install` warning during `npm install`.
+
+## Reverted in this window
+
+- **omx-teams backport (#2903)** was reverted by **#2910** after merge-safety review. Team runtime behavior is unchanged from v4.13.5.
+
+## Stats
+
+- **14 PRs net** | **5 features** | **11 fixes** | **1 docs** | **1 backport reverted**
 
 ## Install / Update
 
 ```bash
-npm install -g oh-my-claude-sisyphus@4.13.5
+npm install -g oh-my-claude-sisyphus@4.13.6
 ```
-
-Or reinstall the plugin:
-
-```bash
-claude /install-plugin oh-my-claudecode
-```
-
-**Full Changelog**: https://github.com/Yeachan-Heo/oh-my-claudecode/compare/v4.13.4...v4.13.5
-
-## Contributors
-
-Thank you to everyone who contributed fixes, reviews, and release validation.
-
-@Yeachan-Heo
